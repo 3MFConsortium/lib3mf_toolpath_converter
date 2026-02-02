@@ -29,5 +29,50 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef __TOOLPATH_EXPORTER
 #define __TOOLPATH_EXPORTER
 
+#include <string>
+#include <vector>
+#include <memory>
+#include "lib3mf_dynamic.hpp"
+
+namespace Toolpath {
+
+	/**
+	 * Abstract interface for toolpath exporters.
+	 * Implement this interface to export toolpath data to different file formats.
+	 */
+	class IToolpathExporter {
+	public:
+		virtual ~IToolpathExporter() = default;
+
+		/**
+		 * Initialize the exporter with the output file path.
+		 * @param sOutputFileName Path to the output file
+		 */
+		virtual void initialize(const std::string& sOutputFileName) = 0;
+
+		/**
+		 * Begin exporting from a 3MF toolpath.
+		 * This sets up internal state based on the toolpath metadata.
+		 * @param pToolpath The lib3mf toolpath to export
+		 * @param pModel The lib3mf model containing build items
+		 */
+		virtual void beginExport(Lib3MF::PToolpath pToolpath, Lib3MF::PModel pModel) = 0;
+
+		/**
+		 * Process a single layer from the toolpath.
+		 * @param nLayerIndex Index of the layer to process
+		 * @param pLayerReader Layer reader for the layer data
+		 */
+		virtual void processLayer(uint32_t nLayerIndex, Lib3MF::PToolpathLayerReader pLayerReader) = 0;
+
+		/**
+		 * Finalize and write the export file.
+		 */
+		virtual void finalize() = 0;
+	};
+
+	typedef std::shared_ptr<IToolpathExporter> PToolpathExporter;
+
+} // namespace Toolpath
 
 #endif // __TOOLPATH_EXPORTER
