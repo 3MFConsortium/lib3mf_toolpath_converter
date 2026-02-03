@@ -239,7 +239,7 @@ namespace Toolpath {
 	{
 		m_pMatJobWriter->writeJobMetaData();
 		m_pMatJobWriter->writeContent();
-
+		m_pMatJobWriter->finalize();
 	}
 
 	void CToolpathExporter_Matjob::setLayersPerBatch(uint32_t nLayersPerBatch)

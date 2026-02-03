@@ -74,6 +74,9 @@ namespace Toolpath {
 
 	void CMatJobWriter::writeContent()
 	{
+		if (m_pZIPWriter == nullptr)
+			throw std::runtime_error("ZIP writer has already been finalized");
+
 		auto pEntry = m_pZIPWriter->createEntry("Content.xml", 0);
 
 		auto contentWriter = std::make_shared<NMR::CXmlWriter_Native>(pEntry);
@@ -118,6 +121,13 @@ namespace Toolpath {
 
 	}
 
+	void CMatJobWriter::finalize()
+	{
+		// Finalize the ZIP file by releasing the ZIP writer
+		// This triggers the destructor which writes the central directory
+		m_pZIPWriter = nullptr;
+	}
+
 	PMatJobBinaryFile CMatJobWriter::beginBinaryFile(const std::string& sFileName)
 	{
 		if (sFileName.empty())
@@ -138,6 +148,9 @@ namespace Toolpath {
 	void CMatJobWriter::closeCurrentBinaryFile()
 	{
 		if (m_pOpenBinaryFile != nullptr) {
+			if (m_pZIPWriter == nullptr)
+				throw std::runtime_error("ZIP writer has already been finalized");
+
 			auto pEntry = m_pZIPWriter->createEntry(m_pOpenBinaryFile->getFileName(), 0);
 			m_pOpenBinaryFile->storeToStream(pEntry);
 
@@ -150,6 +163,9 @@ namespace Toolpath {
 	void CMatJobWriter::writeJobMetaData()
 	{
 		closeCurrentBinaryFile();
+
+		if (m_pZIPWriter == nullptr)
+			throw std::runtime_error("ZIP writer has already been finalized");
 
 		auto pEntry = m_pZIPWriter->createEntry(m_sMetaDataFileName, 0);
 
@@ -197,6 +213,7 @@ namespace Toolpath {
 			throw std::runtime_error("Job Name is Empty!");
 		metaDataWriter->WriteText(m_sJobName.c_str(), (uint32_t)m_sJobName.length());
 		metaDataWriter->WriteEndElement();
+
 
 		double dJobMinX, dJobMinY, dJobMinZ, dJobMaxX, dJobMaxY, dJobMaxZ;
 		calculateGlobalBounds(dJobMinX, dJobMinY, dJobMinZ, dJobMaxX, dJobMaxY, dJobMaxZ);
@@ -365,7 +382,6 @@ namespace Toolpath {
 
 			metaDataWriter->WriteStartElement(nullptr, "VectorType", "");
 			metaDataWriter->WriteAttributeString(nullptr, "Id", nullptr, sIDString.c_str());
-			metaDataWriter->WriteEndElement();
 
 			metaDataWriter->WriteStartElement(nullptr, "Name", "");
 			metaDataWriter->WriteText(sNameString.c_str(), (uint32_t)sNameString.length());
@@ -484,6 +500,7 @@ namespace Toolpath {
 
 		metaDataWriter->WriteEndElement();
 		metaDataWriter->WriteEndDocument();
+
 	}
 
 	void CMatJobWriter::addProperty(const std::string& sName, const std::string& sValue, eMatJobPropertyType propertyType)

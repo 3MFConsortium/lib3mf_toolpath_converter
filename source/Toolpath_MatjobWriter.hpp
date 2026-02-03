@@ -87,6 +87,8 @@ namespace Toolpath {
 
 		void writeJobMetaData();
 
+		void finalize();
+
 		void addProperty(const std::string& sName, const std::string& sValue, eMatJobPropertyType propertyType);
 
 		void addScanField(const std::string& sReference, uint32_t nLaserID, uint32_t nScanFieldID, double dXMin, double dYMin, double dXMax, double dYMax);

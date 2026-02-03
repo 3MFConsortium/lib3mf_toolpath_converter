@@ -122,16 +122,22 @@ int main(int argc, char* argv[])
 
 		std::cout << "Layer Count: " << nLayerCount << ", Units: " << dUnits << "\n";
 
+		std::cout << "Initializing" << std::endl;
 		// Use the abstract exporter interface
 		pExporter->initialize(sOutputFileName);
+
+		std::cout << "Beginning export" << std::endl;
 		pExporter->beginExport(pLib3MFToolpath, pModel);
 
 		// Process all layers
 		for (uint32_t nLayerIndex = 0; nLayerIndex < nLayerCount; nLayerIndex++) {
+			std::cout << "Writing layer " << nLayerIndex << "..." << std::endl;
+
 			auto pLayerReader = pLib3MFToolpath->ReadLayerData(nLayerIndex);
 			pExporter->processLayer(nLayerIndex, pLayerReader);
 		}
 
+		std::cout << "finalizing..." << std::endl;
 		pExporter->finalize();
 
 		pExporter = nullptr;
