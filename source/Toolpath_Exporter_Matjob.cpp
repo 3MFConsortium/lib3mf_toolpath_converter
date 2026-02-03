@@ -30,7 +30,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 #include "Toolpath_Exporter_Matjob.hpp"
-#include <iostream>
 
 namespace Toolpath {
 
@@ -45,8 +44,6 @@ namespace Toolpath {
 	void CToolpathExporter_Matjob::initialize(const std::string& sOutputFileName)
 	{
 		m_sOutputFileName = sOutputFileName;
-
-		std::cout << "Writing MatJob file " << sOutputFileName << "\n";
 
 		std::wstring sOutputFileNameW = NMR::fnUTF8toUTF16(sOutputFileName);
 		m_pExportStream = std::make_shared<NMR::CExportStream_Native>(sOutputFileNameW.c_str());
@@ -231,7 +228,6 @@ namespace Toolpath {
 		m_pMatJobWriter->writeJobMetaData();
 		m_pMatJobWriter->writeContent();
 
-		std::cout << "MatJob export complete.\n";
 	}
 
 	void CToolpathExporter_Matjob::setLayersPerBatch(uint32_t nLayersPerBatch)

@@ -82,18 +82,18 @@ int main(int argc, char* argv[])
 		std::cout << "Output format: " << sOutputFormat << "\n";
 
 		if (sInputFileName.empty() || sOutputFileName.empty())
-			throw std::runtime_error("Usage: converter.exe --input toolpath.3mf --output output_file [--format matjob|clipplus]");
+			throw std::runtime_error("Usage: converter.exe --input toolpath.3mf --output output_file [--format matjob|cliplus]");
 
 		// Create the appropriate exporter based on format
 		PToolpathExporter pExporter;
 		if (sOutputFormat == "matjob") {
 			pExporter = std::make_shared<CToolpathExporter_Matjob>();
 		}
-		else if (sOutputFormat == "clipplus" || sOutputFormat == "cli") {
+		else if (sOutputFormat == "cliplus" || sOutputFormat == "cli") {
 			pExporter = std::make_shared<CToolpathExporter_CLIPlus>();
 		}
 		else {
-			throw std::runtime_error("Unknown output format: " + sOutputFormat + ". Supported formats: matjob, clipplus, cli");
+			throw std::runtime_error("Unknown output format: " + sOutputFormat + ". Supported formats: matjob, cliplus, cli");
 		}
 
 		std::cout << "Reading 3MF file " << sInputFileName << "\n";
@@ -133,6 +133,8 @@ int main(int argc, char* argv[])
 		}
 
 		pExporter->finalize();
+
+		pExporter = nullptr;
 
 		std::cout << "Done.\n";
     }
