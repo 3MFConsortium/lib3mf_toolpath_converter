@@ -30,6 +30,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 #include "Toolpath_Exporter_Matjob.hpp"
+#include "Toolpath_MatjobConst.hpp"
+
 
 namespace Toolpath {
 
@@ -93,14 +95,6 @@ namespace Toolpath {
 			auto pBuildItem = pBuildItems->GetCurrent();
 			auto pObject = pBuildItem->GetObjectResource();
 			std::string sName = pObject->GetName();
-			auto outbox = pObject->GetOutbox();
-
-			outbox.m_MinCoordinate[0] = 10.0;
-			outbox.m_MinCoordinate[1] = 20.0;
-			outbox.m_MinCoordinate[2] = 30.0;
-			outbox.m_MaxCoordinate[0] = 100.0;
-			outbox.m_MaxCoordinate[1] = 200.0;
-			outbox.m_MaxCoordinate[2] = 300.0;
 
 			if (sName.empty())
 				sName = "default name";
@@ -111,9 +105,8 @@ namespace Toolpath {
 				throw std::runtime_error("Build item has no UUID");
 			}
 
-			m_pMatJobWriter->addPart(sName, sUUID, 
-				outbox.m_MinCoordinate[0], outbox.m_MinCoordinate[1], outbox.m_MinCoordinate[2], 
-				outbox.m_MaxCoordinate[0], outbox.m_MaxCoordinate[1], outbox.m_MaxCoordinate[2]);
+			m_pMatJobWriter->addPart(sName, sUUID);
+
 		}
 
 		// Add parameter sets from profiles
@@ -128,8 +121,25 @@ namespace Toolpath {
 			double dLaserPower = pProfile->GetParameterDoubleValue("", "laserpower");
 			double dJumpSpeed = pProfile->GetParameterDoubleValueDef("", "jumpspeed", dLaserSpeed);
 
-			m_pMatJobWriter->addParameterSet(sUUID, sProfileName, (uint32_t)nLaserIndex, 
+			auto pParameterSet = m_pMatJobWriter->addParameterSet(sUUID, sProfileName, (uint32_t)nLaserIndex, 
 				dLaserSpeed, 0, m_dGlobalLaserDiameter, dLaserPower, dJumpSpeed);
+
+			auto nParameterCount = pProfile->GetParameterCount();
+			for (uint32_t nParameterIndex = 0; nParameterIndex < nParameterCount; nParameterIndex++) {
+				std::string sParameterName = pProfile->GetParameterName(nParameterIndex);
+				std::string sParameterNamespace = pProfile->GetParameterNameSpace(nParameterIndex);				
+
+				if (sParameterNamespace == MATJOB_3MFNAMESPACEDOUBLE) {
+					double dParameterValue = pProfile->GetParameterDoubleValue(sParameterNamespace, sParameterName);
+					pParameterSet->addProperty(sParameterName, std::to_string(dParameterValue), eMatJobPropertyType::mjpDouble);
+				}
+				
+				if (sParameterNamespace == MATJOB_3MFNAMESPACEINTEGER) {
+					int64_t nParameterValue = pProfile->GetParameterIntegerValue(sParameterNamespace, sParameterName);
+					pParameterSet->addProperty(sParameterName, std::to_string(nParameterValue), eMatJobPropertyType::mjpInteger);
+				}
+
+			}
 		}
 	}
 
@@ -169,6 +179,8 @@ namespace Toolpath {
 			auto pMatJobPart = m_pMatJobWriter->findPartByBuildItemUUID(sBuildItemUUID);
 			auto pMatJobParameterSet = m_pMatJobWriter->findParameterSetByUUID(sProfileUUID);
 
+			pMatJobPart->addCoordinatesZ(dZValue);
+
 			double dMarkSpeed = pMatJobParameterSet->getLaserSpeed();
 			double dJumpSpeed = pMatJobParameterSet->getJumpSpeed();
 
@@ -194,7 +206,7 @@ namespace Toolpath {
 					}
 				}
 
-				pMatJobLayer->addPolylineDataBlock(m_pCurrentFile.get(), pMatJobPart->getPartID(), 
+				pMatJobLayer->addPolylineDataBlock(pMatJobPart, m_pCurrentFile.get(), pMatJobPart->getPartID(),
 					pMatJobParameterSet->getID(), points, dMarkSpeed, dJumpSpeed);
 				break;
 			}
@@ -209,7 +221,7 @@ namespace Toolpath {
 				if (nPointCount < 2)
 					throw std::runtime_error("Invalid point count in hatch segment");
 
-				pMatJobLayer->addHatchDataBlock(m_pCurrentFile.get(), pMatJobPart->getPartID(), 
+				pMatJobLayer->addHatchDataBlock(pMatJobPart, m_pCurrentFile.get(), pMatJobPart->getPartID(),
 					pMatJobParameterSet->getID(), hatches, dMarkSpeed, dJumpSpeed);
 				break;
 			}

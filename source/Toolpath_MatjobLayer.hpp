@@ -33,6 +33,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cstdint>
 #include <memory>
 #include <vector>
+#include <sstream>
+#include <iomanip>
 
 #include "Toolpath_MatjobBinaryFile.hpp"
 
@@ -40,6 +42,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace Toolpath
 {
+	// Helper function to format double with 4 decimal places
+	inline std::string formatDouble4Layer(double value) {
+		std::ostringstream oss;
+		oss << std::fixed << std::setprecision(4) << value;
+		return oss.str();
+	}
 
 
 	typedef struct _sMatJobDataBlock {
@@ -204,11 +212,13 @@ namespace Toolpath
 			m_DataBlocks.push_back(dataBlock);
 		}
 
-		void addPolylineDataBlock(CMatJobBinaryFile* pBinaryFile, uint32_t nPartID, uint32_t nParameterSetID, const std::vector<Lib3MF::sPosition2D>& points, double dMarkSpeedInMMPerS, double dJumpSpeedInMMPerS)
+		void addPolylineDataBlock(CMatJobPart* pPart, CMatJobBinaryFile* pBinaryFile, uint32_t nPartID, uint32_t nParameterSetID, const std::vector<Lib3MF::sPosition2D>& points, double dMarkSpeedInMMPerS, double dJumpSpeedInMMPerS)
 		{
 			
 			if (pBinaryFile == nullptr)
 				throw std::runtime_error("MatJob Polyline DataBlock has invalid binary file");
+			if (pPart == nullptr)
+				throw std::runtime_error("MatJob Polyline DataBlock has invalid part");
 			if (points.size() == 0)
 				throw std::runtime_error("MatJob Polyline DataBlock has no points");
 
@@ -234,9 +244,20 @@ namespace Toolpath
 			m_nCurrentNumJumpSegments = 0;
 			m_nCurrentNumMarkSegments = 0;
 
-			moveTo(points.at(0).m_Coordinates[0], points.at(0).m_Coordinates[1], dJumpSpeedInMMPerS, false);
+			auto& startPoint = points.at(0);
+			double dStartX = startPoint.m_Coordinates[0];
+			double dStartY = startPoint.m_Coordinates[1];
+			pPart->addCoordinatesXY(dStartX, dStartY);
+
+			moveTo(dStartX, dStartY, dJumpSpeedInMMPerS, false);
 			for (auto i = 1; i < points.size(); i++) {
-				moveTo(points.at(i).m_Coordinates[0], points.at(i).m_Coordinates[1], dMarkSpeedInMMPerS, true);
+
+				auto& movePoint = points.at(i);
+				double dMoveX = movePoint.m_Coordinates[0];
+				double dMoveY = movePoint.m_Coordinates[1];
+
+				pPart->addCoordinatesXY(dMoveX, dMoveY);
+				moveTo(dMoveX, dMoveY, dMarkSpeedInMMPerS, true);
 			}
 
 			// Store Stastitics...
@@ -249,7 +270,7 @@ namespace Toolpath
 
 		}
 
-		void addHatchDataBlock(CMatJobBinaryFile* pBinaryFile, uint32_t nPartID, uint32_t nParameterSetID, const std::vector<Lib3MF::sHatch2D>& hatches, double dMarkSpeedInMMPerS, double dJumpSpeedInMMPerS)
+		void addHatchDataBlock(CMatJobPart* pPart, CMatJobBinaryFile* pBinaryFile, uint32_t nPartID, uint32_t nParameterSetID, const std::vector<Lib3MF::sHatch2D>& hatches, double dMarkSpeedInMMPerS, double dJumpSpeedInMMPerS)
 		{
 			if (pBinaryFile == nullptr)
 				throw std::runtime_error("MatJob Polyline DataBlock has invalid binary file");
@@ -277,6 +298,11 @@ namespace Toolpath
 			m_nCurrentNumMarkSegments = 0;
 
 			for (auto& hatch : hatches) {
+
+
+				pPart->addCoordinatesXY(hatch.m_Point1Coordinates[0], hatch.m_Point1Coordinates[1]);
+				pPart->addCoordinatesXY(hatch.m_Point2Coordinates[0], hatch.m_Point2Coordinates[1]);
+
 				moveTo(hatch.m_Point1Coordinates[0], hatch.m_Point1Coordinates[1], dJumpSpeedInMMPerS, false);
 				moveTo(hatch.m_Point2Coordinates[0], hatch.m_Point2Coordinates[1], dMarkSpeedInMMPerS, true);
 			}
@@ -293,15 +319,15 @@ namespace Toolpath
 		void writeToXML(NMR::PXmlWriter_Native xmlWriter)
 		{
 
-			std::string sZValue = std::to_string(m_dZValue);
-			std::string sLayerScanTimeString = std::to_string(m_dLayerScanTime);
+			std::string sZValue = formatDouble4Layer(m_dZValue);
+			std::string sLayerScanTimeString = formatDouble4Layer(m_dLayerScanTime);
 
-			std::string sTotalMarkDistanceString = std::to_string(m_dTotalMarkDistance);
-			std::string sTotalJumpDistanceString = std::to_string(m_dTotalJumpDistance);
-			std::string sMinXString = std::to_string(m_dMinX);
-			std::string sMinYString = std::to_string(m_dMinY);
-			std::string sMaxXString = std::to_string(m_dMaxX);
-			std::string sMaxYString = std::to_string(m_dMaxY);
+			std::string sTotalMarkDistanceString = formatDouble4Layer(m_dTotalMarkDistance);
+			std::string sTotalJumpDistanceString = formatDouble4Layer(m_dTotalJumpDistance);
+			std::string sMinXString = formatDouble4Layer(m_dMinX);
+			std::string sMinYString = formatDouble4Layer(m_dMinY);
+			std::string sMaxXString = formatDouble4Layer(m_dMaxX);
+			std::string sMaxYString = formatDouble4Layer(m_dMaxY);
 
 			xmlWriter->WriteStartElement(nullptr, "Layer", "");
 
@@ -359,8 +385,8 @@ namespace Toolpath
 				xmlWriter->WriteEndElement();
 
 				xmlWriter->WriteStartElement(nullptr, "Summary", "");
-				xmlWriter->WriteAttributeString(nullptr, "MarkDistance", nullptr, std::to_string(dataBlock.m_dMarkDistance).c_str());
-				xmlWriter->WriteAttributeString(nullptr, "JumpDistance", nullptr, std::to_string(dataBlock.m_dJumpDistance).c_str());
+				xmlWriter->WriteAttributeString(nullptr, "MarkDistance", nullptr, formatDouble4Layer(dataBlock.m_dMarkDistance).c_str());
+				xmlWriter->WriteAttributeString(nullptr, "JumpDistance", nullptr, formatDouble4Layer(dataBlock.m_dJumpDistance).c_str());
 				xmlWriter->WriteAttributeString(nullptr, "NumMarkSegments", nullptr, std::to_string(dataBlock.m_nNumMarkSegments).c_str());
 				xmlWriter->WriteAttributeString(nullptr, "NumJumpSegments", nullptr, std::to_string(dataBlock.m_nNumJumpSegments).c_str());
 				xmlWriter->WriteEndElement();

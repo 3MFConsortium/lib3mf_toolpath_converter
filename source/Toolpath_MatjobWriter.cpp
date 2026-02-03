@@ -30,9 +30,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <stdexcept>
 #include <exception>
+#include <sstream>
+#include <iomanip>
 #include "Toolpath_MatjobWriter.hpp"
 
 namespace Toolpath {
+
+	// Helper function to format double with 4 decimal places
+	static std::string formatDouble4(double value) {
+		std::ostringstream oss;
+		oss << std::fixed << std::setprecision(4) << value;
+		return oss.str();
+	}
 
 	CMatJobWriter::CMatJobWriter(NMR::PExportStream pExportStream)
 	{
@@ -47,12 +56,7 @@ namespace Toolpath {
 		// Dummy Job Information
 		m_sJobUUID = "42bb5e58-5f23-4852-bb9c-0d9fa4c76fd5";
 		m_sJobName = "testjob.job";
-		m_dJobMinX = 10.0;
-		m_dJobMinY = 20.0;
-		m_dJobMinZ = 30.0;
-		m_dJobMaxX = 100.0;
-		m_dJobMaxY = 200.0;
-		m_dJobMaxZ = 300.0;
+
 
 		addProperty("material", m_sJobMaterial, eMatJobPropertyType::mjpString);
 
@@ -121,7 +125,7 @@ namespace Toolpath {
 
 		closeCurrentBinaryFile();
 
-		uint32_t nFileID = (uint32_t)m_BinaryFiles.size() + 1;
+		uint32_t nFileID = (uint32_t)m_BinaryFiles.size();
 
 		m_pOpenBinaryFile = std::make_shared<CMatJobBinaryFile>(nFileID, sFileName);
 
@@ -181,7 +185,7 @@ namespace Toolpath {
 		if (m_sConverterVersion.empty())
 			throw std::runtime_error("Converter Version is Empty!");
 		metaDataWriter->WriteAttributeString(nullptr, "Version", nullptr, m_sConverterVersion.c_str());
-		metaDataWriter->WriteEndElement();
+		metaDataWriter->WriteFullEndElement();
 
 		metaDataWriter->WriteEndElement();
 		metaDataWriter->WriteEndElement();
@@ -194,12 +198,15 @@ namespace Toolpath {
 		metaDataWriter->WriteText(m_sJobName.c_str(), (uint32_t)m_sJobName.length());
 		metaDataWriter->WriteEndElement();
 
-		std::string sXMin = std::to_string(m_dJobMinX);
-		std::string sYMin = std::to_string(m_dJobMinY);
-		std::string sZMin = std::to_string(m_dJobMinZ);
-		std::string sXMax = std::to_string(m_dJobMaxX);
-		std::string sYMax = std::to_string(m_dJobMaxY);
-		std::string sZMax = std::to_string(m_dJobMaxZ);
+		double dJobMinX, dJobMinY, dJobMinZ, dJobMaxX, dJobMaxY, dJobMaxZ;
+		calculateGlobalBounds(dJobMinX, dJobMinY, dJobMinZ, dJobMaxX, dJobMaxY, dJobMaxZ);
+
+		std::string sXMin = formatDouble4(dJobMinX);
+		std::string sYMin = formatDouble4(dJobMinY);
+		std::string sZMin = formatDouble4(dJobMinZ);
+		std::string sXMax = formatDouble4(dJobMaxX);
+		std::string sYMax = formatDouble4(dJobMaxY);
+		std::string sZMax = formatDouble4(dJobMaxZ);
 
 		metaDataWriter->WriteStartElement(nullptr, "JobDimensions", "");
 		metaDataWriter->WriteStartElement(nullptr, "Xmin", "");
@@ -252,10 +259,10 @@ namespace Toolpath {
 		for (auto scanFieldIter : m_ScanFields) {
 			std::string sReference = scanFieldIter.second->getReference();
 			std::string sScanFieldID = std::to_string(scanFieldIter.second->getScanFieldID());
-			std::string sMinX = std::to_string(scanFieldIter.second->getXMin());
-			std::string sMinY = std::to_string(scanFieldIter.second->getYMin());
-			std::string sMaxX = std::to_string(scanFieldIter.second->getXMax());
-			std::string sMaxY = std::to_string(scanFieldIter.second->getYMax());
+			std::string sMinX = formatDouble4(scanFieldIter.second->getXMin());
+			std::string sMinY = formatDouble4(scanFieldIter.second->getYMin());
+			std::string sMaxX = formatDouble4(scanFieldIter.second->getXMax());
+			std::string sMaxY = formatDouble4(scanFieldIter.second->getYMax());
 
 
 			metaDataWriter->WriteStartElement(nullptr, "ScanField", "");
@@ -297,12 +304,12 @@ namespace Toolpath {
 		for (auto partIter : m_Parts) {
 			std::string sIDString = std::to_string(partIter.second->getPartID());
 			std::string sName = partIter.second->getName();
-			std::string sMinX = std::to_string(partIter.second->getMinX());
-			std::string sMinY = std::to_string(partIter.second->getMinY());
-			std::string sMinZ = std::to_string(partIter.second->getMinZ());
-			std::string sMaxX = std::to_string(partIter.second->getMaxX());
-			std::string sMaxY = std::to_string(partIter.second->getMaxY());
-			std::string sMaxZ = std::to_string(partIter.second->getMaxZ());
+			std::string sMinX = formatDouble4(partIter.second->getMinX());
+			std::string sMinY = formatDouble4(partIter.second->getMinY());
+			std::string sMinZ = formatDouble4(partIter.second->getMinZ());
+			std::string sMaxX = formatDouble4(partIter.second->getMaxX());
+			std::string sMaxY = formatDouble4(partIter.second->getMaxY());
+			std::string sMaxZ = formatDouble4(partIter.second->getMaxZ());
 
 
 			metaDataWriter->WriteStartElement(nullptr, "Part", "");
@@ -317,27 +324,27 @@ namespace Toolpath {
 			metaDataWriter->WriteEndElement();
 
 			metaDataWriter->WriteStartElement(nullptr, "Dimensions", "");
-			metaDataWriter->WriteStartElement(nullptr, "XMin", "");
+			metaDataWriter->WriteStartElement(nullptr, "Xmin", "");
 			metaDataWriter->WriteText(sMinX.c_str(), (uint32_t)sMinX.length());
 			metaDataWriter->WriteEndElement();
 
-			metaDataWriter->WriteStartElement(nullptr, "YMin", "");
+			metaDataWriter->WriteStartElement(nullptr, "Ymin", "");
 			metaDataWriter->WriteText(sMinY.c_str(), (uint32_t)sMinY.length());
 			metaDataWriter->WriteEndElement();
 
-			metaDataWriter->WriteStartElement(nullptr, "ZMin", "");
+			metaDataWriter->WriteStartElement(nullptr, "Zmin", "");
 			metaDataWriter->WriteText(sMinZ.c_str(), (uint32_t)sMinZ.length());
 			metaDataWriter->WriteEndElement();
 
-			metaDataWriter->WriteStartElement(nullptr, "XMax", "");
+			metaDataWriter->WriteStartElement(nullptr, "Xmax", "");
 			metaDataWriter->WriteText(sMaxX.c_str(), (uint32_t)sMaxX.length());
 			metaDataWriter->WriteEndElement();
 
-			metaDataWriter->WriteStartElement(nullptr, "YMax", "");
+			metaDataWriter->WriteStartElement(nullptr, "Ymax", "");
 			metaDataWriter->WriteText(sMaxY.c_str(), (uint32_t)sMaxY.length());
 			metaDataWriter->WriteEndElement();
 
-			metaDataWriter->WriteStartElement(nullptr, "ZMax", "");
+			metaDataWriter->WriteStartElement(nullptr, "Zmax", "");
 			metaDataWriter->WriteText(sMaxZ.c_str(), (uint32_t)sMaxZ.length());
 			metaDataWriter->WriteEndElement();
 
@@ -357,14 +364,12 @@ namespace Toolpath {
 			std::string sNameString = vectorTypeIter.second->getName();
 
 			metaDataWriter->WriteStartElement(nullptr, "VectorType", "");
-			metaDataWriter->WriteStartElement(nullptr, "ID", "");
-			metaDataWriter->WriteText(sIDString.c_str(), (uint32_t)sIDString.length());
+			metaDataWriter->WriteAttributeString(nullptr, "Id", nullptr, sIDString.c_str());
 			metaDataWriter->WriteEndElement();
 
 			metaDataWriter->WriteStartElement(nullptr, "Name", "");
 			metaDataWriter->WriteText(sNameString.c_str(), (uint32_t)sNameString.length());
 			metaDataWriter->WriteEndElement();
-
 
 			metaDataWriter->WriteStartElement(nullptr, "Flags", "");
 			if (vectorTypeIter.second->isHatching())
@@ -373,11 +378,11 @@ namespace Toolpath {
 			if (vectorTypeIter.second->isBorder())
 				metaDataWriter->WriteAttributeString(nullptr, "Border", nullptr, "1");
 
-			metaDataWriter->WriteEndElement();
+			metaDataWriter->WriteEndElement(); // Close Flags
 
-			metaDataWriter->WriteEndElement();
+			metaDataWriter->WriteEndElement(); // Close VectorType
 		}
-		metaDataWriter->WriteEndElement();
+		metaDataWriter->WriteEndElement(); // Close VectorTypes
 
 		metaDataWriter->WriteStartElement(nullptr, "ProcessParameterSets", "");
 		for (auto parameterSetIter : m_ParameterSets) {
@@ -390,10 +395,9 @@ namespace Toolpath {
 				throw std::runtime_error("Parameter Set name is empty!");
 
 			std::string sLaserSetIDString = std::to_string(parameterSetIter.second->getLaserSetID());
-			std::string sLaserSpeedString = std::to_string(parameterSetIter.second->getLaserSpeed());
-			std::string sJumpSpeedString = std::to_string(parameterSetIter.second->getJumpSpeed());
-			std::string sLaserDiameterString = std::to_string(parameterSetIter.second->getLaserDiameter());
-			std::string sLaserPowerString = std::to_string(parameterSetIter.second->getLaserPower());
+			std::string sLaserSpeedString = formatDouble4(parameterSetIter.second->getLaserSpeed());
+			std::string sLaserDiameterString = formatDouble4(parameterSetIter.second->getLaserDiameter());
+			std::string sLaserPowerString = formatDouble4(parameterSetIter.second->getLaserPower());
 
 			metaDataWriter->WriteStartElement(nullptr, "ParameterSet", "");
 			metaDataWriter->WriteAttributeString(nullptr, "ScanField", nullptr, sScanFieldIDString.c_str());
@@ -410,9 +414,9 @@ namespace Toolpath {
 			metaDataWriter->WriteText(sLaserSpeedString.c_str(), (uint32_t)sLaserSpeedString.length());
 			metaDataWriter->WriteEndElement();
 
-			metaDataWriter->WriteStartElement(nullptr, "JumpSpeed", "");
+			/*metaDataWriter->WriteStartElement(nullptr, "JumpSpeed", "");
 			metaDataWriter->WriteText(sJumpSpeedString.c_str(), (uint32_t)sJumpSpeedString.length());
-			metaDataWriter->WriteEndElement();
+			metaDataWriter->WriteEndElement();*/
 
 			metaDataWriter->WriteStartElement(nullptr, "LaserSet", "");
 			metaDataWriter->WriteStartElement(nullptr, "ID", "");
@@ -509,12 +513,12 @@ namespace Toolpath {
 	}
 
 
-	void CMatJobWriter::addPart(const std::string& sName, const std::string& sBuildItemUUID, double dPartMinX, double dPartMinY, double dPartMinZ, double dPartMaxX, double dPartMaxY, double dPartMaxZ)
+	void CMatJobWriter::addPart(const std::string& sName, const std::string& sBuildItemUUID)
 	{
 		if (sName.empty())
 			throw std::runtime_error("invalid matjob part name");
 
-		uint32_t nPartID = (uint32_t)m_Parts.size() + 1;
+		uint32_t nPartID = (uint32_t)m_Parts.size();
 
 		auto iIter = m_Parts.find(nPartID);
 		if (iIter != m_Parts.end())
@@ -524,7 +528,7 @@ namespace Toolpath {
 		if (iUUIDIter != m_PartsByBuildItemUUID.end())
 			throw std::runtime_error("duplicate matjob part builditem uuid: " + sBuildItemUUID);
 
-		auto pPart = std::make_shared<CMatJobPart>(sName, nPartID, sBuildItemUUID, dPartMinX, dPartMinY, dPartMinZ, dPartMaxX, dPartMaxY, dPartMaxZ);
+		auto pPart = std::make_shared<CMatJobPart>(sName, nPartID, sBuildItemUUID);
 		m_Parts.insert(std::make_pair(nPartID, pPart));
 		m_PartsByBuildItemUUID.insert(std::make_pair(sBuildItemUUID, pPart));
 
@@ -558,7 +562,7 @@ namespace Toolpath {
 		if (sName.empty())
 			throw std::runtime_error("invalid matjob parameterset name");
 
-		uint32_t nID = (uint32_t)m_ParameterSets.size() + 1;
+		uint32_t nID = (uint32_t)m_ParameterSets.size();
 
 		auto iIter = m_ParameterSets.find(nID);
 		if (iIter != m_ParameterSets.end())
@@ -598,6 +602,64 @@ namespace Toolpath {
 		m_Layers.push_back(m_pOpenLayer);
 
 		return m_pOpenLayer;
+	}
+
+	void CMatJobWriter::calculateGlobalBounds(double& dMinX, double& dMinY, double& dMinZ, double& dMaxX, double& dMaxY, double& dMaxZ)
+	{
+		if (m_Parts.size () == 0)
+			throw std::runtime_error("No parts defined in matjob");
+
+		bool bFirst = true;
+		
+		dMinX = 0.0;
+		dMinY = 0.0;
+		dMinZ = 0.0;
+		dMaxX = 0.0;
+		dMaxY = 0.0;
+		dMaxZ = 0.0;
+
+		for (auto iPartIter : m_Parts) 
+		{
+
+			if (!iPartIter.second->hasPartBounds ())
+				throw std::runtime_error("Part has no bounds defined in matjob. Part may be empty!" + iPartIter.second->getName());
+
+			double dPartMinX = iPartIter.second->getMinX();
+			double dPartMinY = iPartIter.second->getMinY();
+			double dPartMinZ = iPartIter.second->getMinZ();
+			double dPartMaxX = iPartIter.second->getMaxX();
+			double dPartMaxY = iPartIter.second->getMaxY();
+			double dPartMaxZ = iPartIter.second->getMaxZ();
+
+			if (bFirst) {
+				dMinX = dPartMinX;
+				dMinY = dPartMinY;
+				dMinZ = dPartMinZ;
+				dMaxX = dPartMaxX;
+				dMaxY = dPartMaxY;
+				dMaxZ = dPartMaxZ;
+				bFirst = false;
+			}
+			else {
+				if (dPartMinX < dMinX)
+					dMinX = dPartMinX;
+				if (dPartMinY < dMinY)
+					dMinY = dPartMinY;
+				if (dPartMinZ < dMinZ)
+					dMinZ = dPartMinZ;
+				if (dPartMaxX > dMaxX)
+					dMaxX = dPartMaxX;
+				if (dPartMaxY > dMaxY)
+					dMaxY = dPartMaxY;
+				if (dPartMaxZ > dMaxZ)
+					dMaxZ = dPartMaxZ;
+
+			}
+
+
+		}
+
+
 	}
 
 

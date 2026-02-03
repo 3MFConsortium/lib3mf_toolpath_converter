@@ -29,6 +29,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef __TOOLPATH_MATJOBCONST
 #define __TOOLPATH_MATJOBCONST
 
+#define MATJOB_3MFNAMESPACEDOUBLE "http://schemas.materialise.com/AM/MatJob/MetaDataDouble"
+#define MATJOB_3MFNAMESPACEINTEGER "http://schemas.materialise.com/AM/MatJob/MetaDataInteger"
+
 #define VECTORTYPEID_HATCH 0
 #define VECTORTYPEID_BORDER 1
 

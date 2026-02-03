@@ -54,12 +54,6 @@ namespace Toolpath {
 		std::string m_sJobName;
 		std::string m_sBuildItemUUID;
 
-		double m_dJobMinX;
-		double m_dJobMinY;
-		double m_dJobMinZ;
-		double m_dJobMaxX;
-		double m_dJobMaxY;
-		double m_dJobMaxZ;
 		std::string m_sJobMaterial;
 
 		std::map<std::string, PMatJobProperty> m_Properties;
@@ -76,6 +70,8 @@ namespace Toolpath {
 		// Meta Information
 		std::string m_sMetaDataFileName;
 		std::string m_sConverterVersion;
+
+		void calculateGlobalBounds(double & dMinX, double & dMinY, double & dMinZ, double & dMaxX, double & dMaxY, double & dMaxZ);
 
 	public:
 
@@ -95,7 +91,7 @@ namespace Toolpath {
 
 		void addScanField(const std::string& sReference, uint32_t nLaserID, uint32_t nScanFieldID, double dXMin, double dYMin, double dXMax, double dYMax);
 
-		void addPart(const std::string& sName, const std::string& sBuildItemUUID, double dPartMinX, double dPartMinY, double dPartMinZ, double dPartMaxX, double dPartMaxY, double dPartMaxZ);
+		void addPart(const std::string& sName, const std::string& sBuildItemUUID);
 
 		CMatJobPart* findPartByBuildItemUUID(const std::string& sBuildItemUUID);
 

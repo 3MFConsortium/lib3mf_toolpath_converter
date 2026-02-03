@@ -39,6 +39,7 @@ namespace Toolpath {
 		mjpString,
 		mjpInteger,
 		mjpFloat,
+		mjpDouble,
 		mjpBool
 	};
 
@@ -82,6 +83,7 @@ namespace Toolpath {
 			case eMatJobPropertyType::mjpString: return "String";
 			case eMatJobPropertyType::mjpInteger: return "Integer";
 			case eMatJobPropertyType::mjpFloat: return "Float";
+			case eMatJobPropertyType::mjpDouble: return "Double";
 			case eMatJobPropertyType::mjpBool: return "Boolean";
 
 			default:

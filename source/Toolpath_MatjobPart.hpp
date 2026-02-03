@@ -42,6 +42,9 @@ namespace Toolpath
 		std::string m_sName;
 		uint32_t m_nPartID;
 
+
+		bool m_bHasPartBoundsXY;
+		bool m_bHasPartBoundsZ;
 		double m_dPartMinX;
 		double m_dPartMinY;
 		double m_dPartMinZ;
@@ -54,8 +57,9 @@ namespace Toolpath
 
 	public:
 
-		CMatJobPart(const std::string& sName, uint32_t nPartID, const std::string& sBuildItemUUID, double dPartMinX, double dPartMinY, double dPartMinZ, double dPartMaxX, double dPartMaxY, double dPartMaxZ)
-			: m_sName(sName), m_nPartID(nPartID), m_dPartMinX(dPartMinX), m_dPartMinY(dPartMinY), m_dPartMinZ(dPartMinZ), m_dPartMaxX(dPartMaxX), m_dPartMaxY(dPartMaxY), m_dPartMaxZ(dPartMaxZ), m_sBuildItemUUID(sBuildItemUUID)
+		CMatJobPart(const std::string& sName, uint32_t nPartID, const std::string& sBuildItemUUID)
+			: m_sName(sName), m_nPartID(nPartID), m_dPartMinX(0.0), m_dPartMinY(0.0), m_dPartMinZ(0.0), m_dPartMaxX(0.0), m_dPartMaxY(0.0), m_dPartMaxZ(0.0), m_sBuildItemUUID(sBuildItemUUID),
+			m_bHasPartBoundsXY(false), m_bHasPartBoundsZ(false)
 		{
 
 		}
@@ -72,6 +76,21 @@ namespace Toolpath
 		uint32_t getPartID()
 		{
 			return m_nPartID;
+		}
+
+		bool hasPartBoundsXY()
+		{
+			return m_bHasPartBoundsXY;
+		}
+
+		bool hasPartBoundsZ()
+		{
+			return m_bHasPartBoundsZ;
+		}
+
+		bool hasPartBounds()
+		{
+			return m_bHasPartBoundsXY && m_bHasPartBoundsZ;
 		}
 
 		double getMinX()
@@ -104,6 +123,43 @@ namespace Toolpath
 			return m_dPartMaxZ;
 		}
 
+
+		void addCoordinatesXY(double dX, double dY) 
+		{
+			if (!m_bHasPartBoundsXY) {
+				m_dPartMinX = dX;
+				m_dPartMaxX = dX;
+				m_dPartMinY = dY;
+				m_dPartMaxY = dY;
+				m_bHasPartBoundsXY = true;
+			}
+			else {
+				if (dX < m_dPartMinX)
+					m_dPartMinX = dX;
+				if (dX > m_dPartMaxX)
+					m_dPartMaxX = dX;
+				if (dY < m_dPartMinY)
+					m_dPartMinY = dY;
+				if (dY > m_dPartMaxY)
+					m_dPartMaxY = dY;
+			}
+
+		}
+
+		void addCoordinatesZ(double dZ)
+		{
+			if (!m_bHasPartBoundsZ) {
+				m_dPartMinZ = dZ;
+				m_dPartMaxZ = dZ;
+				m_bHasPartBoundsZ = true;
+			}
+			else {
+				if (dZ < m_dPartMinZ)
+					m_dPartMinZ = dZ;
+				if (dZ > m_dPartMaxZ)
+					m_dPartMaxZ = dZ;
+			}
+		}
 
 	};
 
